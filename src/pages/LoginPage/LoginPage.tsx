@@ -1,6 +1,5 @@
 import { ChangeEvent, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-
 import api from "../../api";
 import "./LoginPage.css";
 import { toast } from "react-toastify";
@@ -10,8 +9,6 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
-
-  // const navigate = useNavigate();
 
   const togglePassword = () => {
     setShowPassword(!showPassword);
@@ -34,6 +31,8 @@ const LoginPage = () => {
       if (token) {
         login(token);
         toast.success("Logged in");
+        setEmail("");
+        setPassword("");
       }
     } catch (error) {
       console.log("Failed to login", error);
@@ -43,6 +42,7 @@ const LoginPage = () => {
   return (
     <div className="loginForm">
       <h1>Login</h1>
+
       <form onSubmit={loginHandler}>
         <div className="form-control input input-primary">
           <input

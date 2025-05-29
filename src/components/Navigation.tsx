@@ -85,6 +85,9 @@ const Navigation = () => {
           {user ? (
             <>
               <LogoutButton />
+              <Link to="/" className="btn btn-ghost btn-sm">
+                Home Page
+              </Link>
             </>
           ) : (
             <>

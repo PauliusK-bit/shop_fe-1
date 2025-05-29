@@ -1,6 +1,7 @@
 import { ChangeEvent, useState } from "react";
 import { useNavigate } from "react-router";
 import api from "../../api";
+import "./Register.css";
 
 const RegisterPage = () => {
   const [email, setEmail] = useState("");
@@ -35,6 +36,7 @@ const RegisterPage = () => {
       <form onSubmit={registerHandler}>
         <div className="form-control">
           <input
+            className="input input-warning"
             placeholder="Enter your username"
             type="username"
             id="username"
@@ -45,6 +47,7 @@ const RegisterPage = () => {
 
         <div className="form-control">
           <input
+            className="input input-warning"
             placeholder="Enter your email"
             type="email"
             id="email"
@@ -55,6 +58,7 @@ const RegisterPage = () => {
 
         <div className="form-control">
           <input
+            className="input input-warning"
             placeholder="Enter your password"
             type="password"
             id="password"
@@ -63,7 +67,11 @@ const RegisterPage = () => {
           />
         </div>
 
-        <button data-label="Register" className="rainbow-hover" type="submit">
+        <button
+          data-label="Register"
+          className="btn btn-outline btn-warning"
+          type="submit"
+        >
           <span className="sp">Register</span>
         </button>
       </form>
