@@ -11,7 +11,13 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
-  const responseMessage = (response) => {
+  interface GoogleCredentialResponse {
+    credential?: string;
+    select_by?: string;
+    clientId?: string;
+  }
+
+  const responseMessage = (response: GoogleCredentialResponse) => {
     console.log(response);
   };
   const errorMessage = () => {
