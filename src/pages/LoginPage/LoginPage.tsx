@@ -3,12 +3,20 @@ import { useAuth } from "../../contexts/AuthContext";
 import api from "../../api";
 import "./LoginPage.css";
 import { toast } from "react-toastify";
+import { GoogleLogin } from "@react-oauth/google";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
+
+  const responseMessage = (response) => {
+    console.log(response);
+  };
+  const errorMessage = () => {
+    console.log("Google login error");
+  };
 
   const togglePassword = () => {
     setShowPassword(!showPassword);
@@ -42,7 +50,12 @@ const LoginPage = () => {
   return (
     <div className="loginForm">
       <h1>Login</h1>
-
+      <div>
+        <h2>React Google Login</h2>
+        <br />
+        <br />
+        <GoogleLogin onSuccess={responseMessage} onError={errorMessage} />
+      </div>
       <form onSubmit={loginHandler}>
         <div className="form-control input input-primary">
           <input
