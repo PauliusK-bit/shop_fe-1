@@ -76,7 +76,7 @@ const Navigation = () => {
 
       <div className="navbar-center">
         <Link className="btn btn-ghost text-xl" to="/">
-          Learn Hub
+          Shop
         </Link>
       </div>
 
@@ -99,6 +99,9 @@ const Navigation = () => {
               </Link>
               <Link to="/register" className="btn btn-ghost btn-sm">
                 Register
+              </Link>
+              <Link to="/categories" className="btn btn-ghost btn-sm">
+                Categories
               </Link>
             </>
           )}

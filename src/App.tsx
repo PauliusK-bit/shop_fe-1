@@ -6,12 +6,15 @@ import LoginPage from "./pages/LoginPage/LoginPage";
 import { ToastContainer } from "react-toastify";
 import Navigation from "./components/Navigation";
 import HomePage from "./pages/HomePage/HomePage";
-import { GoogleOAuthProvider } from "@react-oauth/google";
+import CategoriesPage from "./pages/CategoriesPage/CategoriesPage";
+import CategoryPage from "./pages/CategoryPage/CategoryPage";
+import { CartPageContextProvider } from "./contexts/CartContextProvider";
+import Cart from "./pages/CartPage/Cart";
 
 function App() {
   return (
     <>
-      <GoogleOAuthProvider clientId="853164568689-4k5835ds6uku987hjqugotosrotu793s.apps.googleusercontent.com">
+      <CartPageContextProvider>
         <AuthProvider>
           <BrowserRouter>
             <ToastContainer />
@@ -20,10 +23,13 @@ function App() {
               <Route path="register" element={<RegisterPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="/" element={<HomePage />} />
+              <Route path="categories" element={<CategoriesPage />} />
+              <Route path="categories/:id" element={<CategoryPage />} />
+              <Route path="cart" element={<Cart />} />
             </Routes>
           </BrowserRouter>
         </AuthProvider>
-      </GoogleOAuthProvider>
+      </CartPageContextProvider>
     </>
   );
 }
