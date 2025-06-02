@@ -1,4 +1,4 @@
 @import "tailwindcss";
 @plugin "daisyui" {
-  themes: luxury --default;
+  themes: fantasy --default;
 }

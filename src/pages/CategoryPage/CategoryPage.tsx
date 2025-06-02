@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 import api from "../../api";
 import { Item } from "../../components/types";
 import { useCart } from "../../contexts/CartContextProvider";
@@ -33,24 +33,34 @@ const CategoryPage = () => {
   return (
     <>
       <div>
-        <p>Category id: {id}</p>
-        <h1>Subjects:</h1>
         {items.length === 0 ? (
           <p
             style={{ fontSize: "20px", color: "#bdc3c7", textAlign: "center" }}
           >
-            No subjects found.
+            No products found.
           </p>
         ) : (
-          <ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {items.map((item) => (
-              <li key={item._id}>
-                <Link to={`/items/${item._id}`}>{item.name}</Link>
-                <p>{item.description}</p>
-                <button onClick={() => addProduct(item)}>Add to cart</button>
-              </li>
+              <div key={item._id} className="card bg-base-100 shadow-sm w-96">
+                <figure>
+                  <img src={item.image} alt={item.name} />
+                </figure>
+                <div className="card-body">
+                  <h2 className="card-title">{item.name}</h2>
+                  <p>{item.description}</p>
+                  <div className="card-actions justify-end">
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => addProduct(item)}
+                    >
+                      Add to cart
+                    </button>
+                  </div>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </>

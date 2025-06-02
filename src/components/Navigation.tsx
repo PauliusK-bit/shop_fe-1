@@ -1,11 +1,15 @@
 import "./Navigation.css";
 import LogoutButton from "./LogoutButton";
-
 import { Link } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
+import { useCart } from "../contexts/CartContextProvider";
 
 const Navigation = () => {
   const { user } = useAuth();
+
+  const { cart } = useCart();
+
+  const cartCount = cart ? cart.length : 0;
 
   return (
     <div className="navbar bg-base-100 shadow-sm  ">
@@ -79,6 +83,18 @@ const Navigation = () => {
           Shop
         </Link>
       </div>
+
+      <Link
+        to="/cart"
+        className="flex items-center gap-2 relative p-2 rounded-full hover:bg-gray-100"
+      >
+        🛒
+        {cartCount > 0 && (
+          <div className="absolute top-0 right-0 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+            {cartCount}
+          </div>
+        )}
+      </Link>
 
       <div className="navbar-end hidden lg:flex">
         <div className="flex items-center gap-2">
