@@ -1,10 +1,6 @@
 import styled from "styled-components";
 import { useCart } from "../contexts/CartContextProvider";
-import { CartProduct } from "./types";
-
-type CartItemProps = {
-  data: CartProduct;
-};
+import { CartItemProps } from "./types";
 
 const ItemContainer = styled.div`
   background-color: #ffffff;

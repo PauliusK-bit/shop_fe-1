@@ -29,3 +29,7 @@ export interface Item {
 export interface CartProduct extends Item {
   quantity: number;
 }
+
+export interface CartItemProps {
+  data: CartProduct;
+}

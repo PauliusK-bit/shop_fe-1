@@ -3,7 +3,8 @@ import { CategoryProps } from "./types";
 import styled from "styled-components";
 
 const ModernLink = styled(Link)`
-  display: inline-block;
+  display: flex;
+  flex-direction: row;
   padding: 10px 20px;
   font-size: 16px;
   color: #1d4ed8;
