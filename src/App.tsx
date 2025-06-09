@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./App.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import RegisterPage from "./pages/RegisterPage/RegisterPage";
@@ -10,27 +10,37 @@ import CategoriesPage from "./pages/CategoriesPage/CategoriesPage";
 import CategoryPage from "./pages/CategoryPage/CategoryPage";
 import { CartPageContextProvider } from "./contexts/CartContextProvider";
 import Cart from "./pages/CartPage/Cart";
+import CheckoutPage from "./pages/CheckoutPage/CheckoutPage";
+
+function Layout() {
+  const location = useLocation();
+
+  return (
+    <>
+      <ToastContainer />
+      {location.pathname !== "/checkout" && <Navigation />}
+      <Routes>
+        <Route path="register" element={<RegisterPage />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="categories" element={<CategoriesPage />} />
+        <Route path="categories/:id" element={<CategoryPage />} />
+        <Route path="cart" element={<Cart />} />
+        <Route path="checkout" element={<CheckoutPage />} />
+      </Routes>
+    </>
+  );
+}
 
 function App() {
   return (
-    <>
-      <CartPageContextProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <ToastContainer />
-            <Navigation />
-            <Routes>
-              <Route path="register" element={<RegisterPage />} />
-              <Route path="login" element={<LoginPage />} />
-              <Route path="/" element={<HomePage />} />
-              <Route path="categories" element={<CategoriesPage />} />
-              <Route path="categories/:id" element={<CategoryPage />} />
-              <Route path="cart" element={<Cart />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </CartPageContextProvider>
-    </>
+    <CartPageContextProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Layout />
+        </BrowserRouter>
+      </AuthProvider>
+    </CartPageContextProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import CartItem from "../../components/CartProducts";
 import { useCart } from "../../contexts/CartContextProvider";
+import { Link } from "react-router";
 
 const CartContainer = styled.div`
   max-width: 800px;
@@ -77,7 +78,7 @@ const Cart: React.FC = () => {
       </ItemsWrapper>
       <ButtonsWrapper>
         <Button onClick={clearCart}>Clear Cart</Button>
-        <Button>Checkout</Button>
+        <Link to={`/checkout`}>Checkout</Link>
       </ButtonsWrapper>
     </CartContainer>
   );
