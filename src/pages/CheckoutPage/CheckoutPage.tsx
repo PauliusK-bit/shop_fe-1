@@ -1,170 +1,122 @@
-import { useState } from "react";
-import { useCart } from "../../contexts/CartContextProvider";
-import styled from "styled-components";
+import {
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 
-const ButtonsWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+interface CheckoutPageProps {
+  clientSecret: string | null;
+}
 
-  @media (max-width: 400px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-`;
+const CheckoutPage: React.FC<CheckoutPageProps> = ({ clientSecret }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const navigate = useNavigate();
 
-const Button = styled.button`
-  background-color: ${(props) => (props.disabled ? "#bbb" : "#1976d2")};
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 4px 6px;
-  font-size: 1rem;
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
-  transition: background-color 0.3s ease;
+  const [message, setMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  &:hover {
-    background-color: ${(props) => !props.disabled && "#1565c0"};
-  }
-`;
+  useEffect(() => {
+    if (!stripe) {
+      return;
+    }
 
-const RemoveButton = styled(Button)`
-  background-color: #e53935;
-  padding: 2px 4px;
+    const clientSecret = new URLSearchParams(window.location.search).get(
+      "payment_intent_client_secret"
+    );
 
-  &:hover {
-    background-color: #d32f2f;
-  }
-`;
+    if (!clientSecret) {
+      return;
+    }
 
-const CheckoutPage = () => {
-  const [name, setName] = useState("");
-  const [surname, setSurname] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [formError, setFormError] = useState("");
+    stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
+      if (!paymentIntent) {
+        return;
+      }
 
-  const { cart, updateQuantity, removeProduct } = useCart();
+      console.log(paymentIntent.status);
+    });
+  }, [stripe]);
 
-  const finalPrice = cart.reduce(
-    (sum, currentProduct) =>
-      sum + Number(currentProduct.price) * Number(currentProduct.quantity),
-    0
-  );
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const nameHandler = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setName(event.target.value);
+    if (!stripe || !elements || !clientSecret) {
+      setMessage("Stripe.js has not yet loaded.");
+      return;
+    }
 
-  const surnameHandler = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setSurname(event.target.value);
+    setIsLoading(true);
 
-  const emailHandler = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setEmail(event.target.value);
+    try {
+      if (!clientSecret) {
+        setMessage("Missing payment information.");
+        setIsLoading(false);
+        return;
+      }
 
-  const phoneHandler = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setPhone(event.target.value);
+      const { paymentIntent: existingPaymentIntent } =
+        await stripe.retrievePaymentIntent(clientSecret);
 
-  const formHandler = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!name || !surname || !email || !phone) {
-      setFormError("Visi laukai yra privalomi");
-    } else {
-      setFormError("");
-      console.log("Vartotojo informacija:");
-      console.log("Vardas:", name);
-      console.log("Pavardė:", surname);
-      console.log("Email:", email);
-      console.log("Telefonas:", phone);
+      if (
+        existingPaymentIntent &&
+        existingPaymentIntent.status === "succeeded"
+      ) {
+        console.log("PaymentIntent already succeeded.");
+        setMessage("Payment already processed.");
+        navigate("/complete");
+        return;
+      }
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/complete`,
+        },
+        redirect: "if_required",
+      });
+      console.log("PaymentIntent:", paymentIntent);
 
-      setName("");
-      setSurname("");
-      setEmail("");
-      setPhone("");
+      if (error) {
+        console.error("Payment Failed:", error.message);
+        setMessage(`Payment failed: ${error.message}`);
+      } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        console.log("Payment Succeeded:", paymentIntent);
+        navigate("/complete");
+      } else {
+        console.log("Unexpected state:", paymentIntent);
+        setMessage("An unexpected error occurred.");
+      }
+    } catch (error: unknown) {
+      console.error("Payment Error:", error);
+      if (error instanceof Error) {
+        setMessage(`An unexpected error occurred: ${error.message}`);
+      } else {
+        setMessage("An unexpected error occurred.");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const paymentElementOptions = {
+    layout: "accordion" as const,
+  };
+
   return (
-    <>
-      {formError && <p style={{ color: "red" }}>{formError}</p>}
-      <form onSubmit={formHandler}>
-        <div className="form-control">
-          <label htmlFor="name">Name:</label>
-          <input
-            type="text"
-            name="name"
-            id="name"
-            value={name}
-            onChange={nameHandler}
-          />
-        </div>
-        <div className="form-control">
-          <label htmlFor="surname">Surname:</label>
-          <input
-            type="text"
-            name="surname"
-            id="surname"
-            value={surname}
-            onChange={surnameHandler}
-          />
-        </div>
-        <div className="form-control">
-          <label htmlFor="phone">Phone:</label>
-          <input
-            type="tel"
-            name="phone"
-            id="phone"
-            value={phone}
-            onChange={phoneHandler}
-          />
-        </div>
-        <div className="form-control">
-          <label htmlFor="email">Email:</label>
-          <input
-            type="email"
-            name="email"
-            id="email"
-            value={email}
-            onChange={emailHandler}
-          />
-        </div>
-        <button type="submit">Pateikti</button>
-      </form>
-
-      <div>
-        <h2>Krepselio prekes</h2>
-        <ul>
-          {cart.map((item, index) => (
-            <li key={index}>
-              <span>{item.name}</span>
-              <p>
-                {" "}
-                Price: €{item.price} &nbsp; Amount: {item.quantity} &nbsp; = €
-                {Number(item.price) * Number(item.quantity)}
-              </p>
-              <ButtonsWrapper>
-                <Button
-                  onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                  disabled={item.quantity <= 1}
-                >
-                  -
-                </Button>
-                <Button
-                  onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                >
-                  +
-                </Button>
-                <RemoveButton onClick={() => removeProduct(item._id)}>
-                  Delete 😭
-                </RemoveButton>
-              </ButtonsWrapper>
-            </li>
-          ))}
-
-          <span className="text-info">Total Price: {finalPrice}</span>
-        </ul>
-      </div>
-    </>
+    <form id="payment-form" onSubmit={handleSubmit}>
+      <PaymentElement id="payment-element" options={paymentElementOptions} />
+      <button
+        disabled={isLoading || !stripe || !elements || !clientSecret}
+        id="submit"
+      >
+        <span id="button-text">
+          {isLoading ? <div className="spinner" id="spinner"></div> : "Pay now"}
+        </span>
+      </button>
+      {message && <div id="payment-message">{message}</div>}
+    </form>
   );
 };
 
