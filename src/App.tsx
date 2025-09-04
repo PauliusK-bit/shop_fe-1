@@ -12,7 +12,6 @@ import CategoryPage from "./pages/CategoryPage/CategoryPage";
 import { useCart } from "./contexts/CartContextProvider";
 import Cart from "./pages/CartPage/Cart";
 import CheckoutPage from "./pages/CheckoutPage/CheckoutPage";
-
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import CompletePage from "./pages/CompletePage/CompletePage";
@@ -47,11 +46,15 @@ function Layout({ clientSecret }: { clientSecret: string | null }) {
 
 function App() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { cart } = useCart();
 
   useEffect(() => {
     if (cart && cart.length > 0) {
       const fetchClientSecret = async () => {
+        setLoading(true);
+        setError(null);
         try {
           const response = await fetch(
             "http://localhost:3009/api/order/checkout",
@@ -68,14 +71,25 @@ function App() {
               }),
             }
           );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
           const data = await response.json();
           setClientSecret(data.clientSecret);
-        } catch (error) {
-          console.error("Failed to fetch client secret:", error);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (err: any) {
+          console.error("Failed to fetch client secret:", err);
+          setError(err.message || "Failed to fetch client secret.");
+        } finally {
+          setLoading(false);
         }
       };
 
       fetchClientSecret();
+    } else {
+      setLoading(false);
     }
   }, [cart]);
 
