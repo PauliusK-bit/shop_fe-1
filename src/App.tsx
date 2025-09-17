@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useLocation,
+  Outlet,
+} from "react-router-dom";
 import "./App.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import RegisterPage from "./pages/RegisterPage/RegisterPage";
@@ -15,102 +21,131 @@ import CheckoutPage from "./pages/CheckoutPage/CheckoutPage";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import CompletePage from "./pages/CompletePage/CompletePage";
+import api from "./api";
 
 const stripePromise = loadStripe(
   "pk_test_51RVoNPPJ29FkixG5n0Df3CzRSyVAG4SvPgz7AhhHcxTLiT4DtqRUAcXTbqHJlR0bMyeESj9kejzF9sOwckqRVvGQ00JtoR8Q3m"
 );
 
-function Layout({ clientSecret }: { clientSecret: string | null }) {
+function Layout() {
   const location = useLocation();
+  const showNav = location.pathname !== "/checkout";
 
   return (
     <>
       <ToastContainer />
-      {location.pathname !== "/checkout" && <Navigation />}
-      <Routes>
-        <Route path="register" element={<RegisterPage />} />
-        <Route path="login" element={<LoginPage />} />
-        <Route path="/" element={<HomePage />} />
-        <Route path="categories" element={<CategoriesPage />} />
-        <Route path="categories/:id" element={<CategoryPage />} />
-        <Route path="cart" element={<Cart />} />
-        <Route
-          path="checkout"
-          element={<CheckoutPage clientSecret={clientSecret} />}
-        />
-        <Route path="complete" element={<CompletePage />} />
-      </Routes>
+      {showNav && <Navigation />}
+      <Outlet />
     </>
   );
 }
 
-function App() {
+function CheckoutWithStripe() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { cart } = useCart();
 
   useEffect(() => {
-    if (cart && cart.length > 0) {
-      const fetchClientSecret = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          const response = await fetch(
-            "http://localhost:3009/api/order/checkout",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                items: cart.map((item) => ({
-                  id: item._id,
-                  amount: Number(item.price) * Number(item.quantity) * 100,
-                })),
-              }),
-            }
-          );
+    const fetchClientSecret = async () => {
+      if (!cart || cart.length === 0) {
+        setError("Your cart is empty");
+        setLoading(false);
+        return;
+      }
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
+      try {
+        console.log("Sending checkout request with items:", cart.length);
 
-          const data = await response.json();
-          setClientSecret(data.clientSecret);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-          console.error("Failed to fetch client secret:", err);
-          setError(err.message || "Failed to fetch client secret.");
-        } finally {
-          setLoading(false);
+        const response = await api.post("/order/checkout", {
+          items: cart.map((item) => ({
+            id: item._id,
+            amount: Math.round(
+              Number(item.price) * Number(item.quantity) * 100
+            ),
+            quantity: item.quantity,
+          })),
+        });
+
+        console.log("Response received:", response.status);
+
+        if (!response || response.status !== 200) {
+          throw new Error(`Payment setup failed: ${response.status}`);
         }
-      };
 
-      fetchClientSecret();
-    } else {
-      setLoading(false);
-    }
+        const data = response.data;
+        setClientSecret(data.clientSecret);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        console.error("Failed to fetch client secret:", err);
+        setError(err.message || "Payment setup failed. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClientSecret();
   }, [cart]);
 
-  const appearance: { theme: "stripe" | "night" | "flat" } = {
-    theme: "stripe",
-  };
-  const options = clientSecret
-    ? {
-        clientSecret,
-        appearance,
-      }
-    : undefined;
+  if (loading) {
+    return (
+      <div className="checkout-loading">
+        <p>Setting up payment system...</p>
+      </div>
+    );
+  }
 
+  if (error || !clientSecret) {
+    return (
+      <div className="checkout-error">
+        <h2>Something went wrong</h2>
+        <p>{error || "Unable to setup payment"}</p>
+        <button onClick={() => (window.location.href = "/cart")}>
+          Return to cart
+        </button>
+      </div>
+    );
+  }
+
+  const appearance = {
+    theme: "stripe" as const,
+  };
+
+  return (
+    <Elements options={{ clientSecret, appearance }} stripe={stripePromise}>
+      <CheckoutPage clientSecret={clientSecret} />
+    </Elements>
+  );
+}
+
+function CompleteWithStripe() {
+  const appearance = {
+    theme: "stripe" as const,
+  };
+
+  return (
+    <Elements stripe={stripePromise} options={{ appearance }}>
+      <CompletePage />
+    </Elements>
+  );
+}
+
+function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        {clientSecret && (
-          <Elements options={options} stripe={stripePromise}>
-            <Layout clientSecret={clientSecret} />
-          </Elements>
-        )}
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<HomePage />} />
+            <Route path="register" element={<RegisterPage />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
+            <Route path="categories/:id" element={<CategoryPage />} />
+            <Route path="cart" element={<Cart />} />
+            <Route path="checkout" element={<CheckoutWithStripe />} />
+            <Route path="complete" element={<CompleteWithStripe />} />
+          </Route>
+        </Routes>
       </BrowserRouter>
     </AuthProvider>
   );

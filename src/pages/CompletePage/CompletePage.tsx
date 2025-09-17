@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStripe } from "@stripe/react-stripe-js";
 import { useCart } from "../../contexts/CartContextProvider";
+import { useNavigate } from "react-router";
 
 const SuccessIcon = (
   <svg
@@ -99,72 +100,75 @@ export default function CompletePage() {
   const stripe = useStripe();
   const [status, setStatus] = useState<PaymentStatus>("default");
   const [intentId, setIntentId] = useState<string | null>(null);
-
   const { clearCart } = useCart();
+  const navigate = useNavigate();
 
-  // useEffect(() => {
-  //   if (!stripe) {
-  //     console.log("Stripe is not initialized.");
-  //     return;
-  //   }
-
-  //   const clientSecret = new URLSearchParams(window.location.search).get(
-  //     "payment_intent_client_secret"
-  //   );
-
-  //   if (!clientSecret) {
-  //     return;
-  //   }
-
-  //   setTimeout(() => {
-  //     stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
-  //       if (!paymentIntent) {
-  //         console.error("Failed to retrieve PaymentIntent");
-  //         setStatus("default");
-  //         setIntentId(null);
-  //         return;
-  //       }
-
-  //       const validStatuses: PaymentStatus[] = [
-  //         "succeeded",
-  //         "processing",
-  //         "requires_payment_method",
-  //       ];
-  //       setStatus(
-  //         validStatuses.includes(paymentIntent.status as PaymentStatus)
-  //           ? (paymentIntent.status as PaymentStatus)
-  //           : "default"
-  //       );
-  //       setIntentId(paymentIntent.id);
-  //     });
-  //   });
-  // }, [stripe]);
+  const hasProcessedPayment = useRef(false);
 
   useEffect(() => {
-    if (!stripe) return;
+    if (!stripe || hasProcessedPayment.current) {
+      return;
+    }
 
-    const params = new URLSearchParams(window.location.search);
-    const clientSecret = params.get("payment_intent_client_secret");
+    const checkPaymentStatus = async () => {
+      console.log("Checking payment status...");
 
-    if (clientSecret) {
-      stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
-        console.log("paymentIntent:", paymentIntent);
-        if (!paymentIntent) {
+      const params = new URLSearchParams(window.location.search);
+      const clientSecret = params.get("payment_intent_client_secret");
+      const paymentIntentId = params.get("payment_intent");
+
+      if (!clientSecret && !paymentIntentId) {
+        console.log("No payment information found, redirecting to home");
+        navigate("/");
+        return;
+      }
+      try {
+        if (!clientSecret) {
+          console.log("No client secret found in URL");
           setStatus("default");
-        } else {
-          setStatus(
-            paymentIntent.status === "succeeded" ? "succeeded" : "default"
-          );
-          setIntentId(paymentIntent.id);
-          if (paymentIntent.status === "succeeded") {
+          return;
+        }
+
+        const { paymentIntent } = await stripe.retrievePaymentIntent(
+          clientSecret
+        );
+
+        if (!paymentIntent) {
+          console.log("No payment intent returned");
+          setStatus("default");
+          return;
+        }
+
+        console.log("Payment status:", paymentIntent.status);
+
+        if (paymentIntent.status === "succeeded") {
+          setStatus("succeeded");
+
+          if (!hasProcessedPayment.current) {
             clearCart();
           }
+        } else if (paymentIntent.status === "processing") {
+          setStatus("processing");
+        } else if (paymentIntent.status === "requires_payment_method") {
+          setStatus("requires_payment_method");
+        } else {
+          setStatus("default");
         }
-      });
-    } else {
-      setStatus("default");
-    }
-  }, [stripe, clearCart]);
+
+        setIntentId(paymentIntent.id);
+      } catch (error) {
+        console.error("Error retrieving payment intent:", error);
+        setStatus("default");
+      }
+    };
+
+    hasProcessedPayment.current = true;
+
+    checkPaymentStatus();
+  }, [stripe, clearCart, navigate]);
+
+  console.log("Rendering with status:", status);
+  console.log("Status content:", STATUS_CONTENT_MAP[status]);
 
   return (
     <div id="payment-status">
