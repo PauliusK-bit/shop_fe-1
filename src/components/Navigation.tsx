@@ -135,6 +135,12 @@ const Navigation = () => {
               <Link to="/" className="btn btn-ghost btn-sm">
                 Home Page
               </Link>
+              <li>
+                <Link to="/profile">Profile</Link>
+              </li>
+              <li>
+                <Link to="/categories">Categories</Link>
+              </li>
             </>
           ) : (
             <>
